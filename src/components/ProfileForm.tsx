@@ -16,6 +16,7 @@ export default function ProfileForm({
   const [goalWeight, setGoalWeight] = useState<number | null>(null)
   const [isPublic, setIsPublic] = useState(false)
   const [latestWeight, setLatestWeight] = useState<number | null>(null)
+  const [stars, setStars] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -23,7 +24,7 @@ export default function ProfileForm({
     const loadProfile = async () => {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('first_name, last_name, start_weight, goal_weight, public')
+        .select('first_name, last_name, start_weight, goal_weight, public, stars')
         .eq('id', userId)
         .single()
 
@@ -33,6 +34,7 @@ export default function ProfileForm({
         setStartWeight(profile.start_weight ?? null)
         setGoalWeight(profile.goal_weight ?? null)
         setIsPublic(profile.public ?? false)
+        setStars(profile.stars ?? 0)
       }
 
       const { data: weight } = await supabase
@@ -90,6 +92,9 @@ export default function ProfileForm({
         )
       : null
 
+  const renderStars = (count: number) =>
+    '⭐'.repeat(count).padEnd(5, '☆') // max 5 synliga (valfritt)
+
   if (loading) return <p className="text-center">Laddar profil...</p>
 
   return (
@@ -118,7 +123,7 @@ export default function ProfileForm({
         />
       </div>
 
-      {/* Vikt */}
+      {/* Viktmål */}
       <div className="space-y-1">
         <label className="block text-sm font-medium">Startvikt (kg)</label>
         <input
@@ -139,7 +144,7 @@ export default function ProfileForm({
         />
       </div>
 
-      {/* Public profil */}
+      {/* Offentlig profil */}
       <div className="flex items-center gap-2">
         <input
           type="checkbox"
@@ -166,6 +171,23 @@ export default function ProfileForm({
         </div>
       )}
 
+{stars !== null && (
+  <div className="bg-yellow-50 p-3 rounded text-sm text-center space-y-2">
+    <div>
+      🌟 Du har samlat <strong>{stars}</strong> stjärna{stars === 1 ? '' : 'r'}!
+    </div>
+    <div className="text-xl">{renderStars(Math.min(stars, 5))}</div>
+
+    {/* Medaljer */}
+    <div className="pt-2">
+      {stars >= 20 && <div className="text-2xl">🏆 Legend</div>}
+      {stars >= 15 && <div className="text-2xl">🥇 Guld</div>}
+      {stars >= 10 && <div className="text-2xl">🥈 Silver</div>}
+      {stars >= 5 && <div className="text-2xl">🥉 Brons</div>}
+    </div>
+  </div>
+)}
+
       {/* Spara */}
       <button
         type="submit"
@@ -175,7 +197,6 @@ export default function ProfileForm({
       </button>
 
       {message && <p className="text-green-600 text-sm text-center">{message}</p>}
-      <div className="pb-24" />
     </form>
   )
 }

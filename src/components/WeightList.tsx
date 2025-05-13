@@ -16,37 +16,37 @@ export default function WeightList({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
+  const fetchData = async () => {
+    setLoading(true)
 
-      const [{ data: weightData, error: weightError }, { data: profileData }] =
-        await Promise.all([
-          supabase
-            .from('weights')
-            .select('*')
-            .eq('user_id', userId)
-            .order('date', { ascending: false }),
-          supabase
-            .from('profiles')
-            .select('start_weight')
-            .eq('id', userId)
-            .single(),
-        ])
+    const [{ data: weightData, error: weightError }, { data: profileData }] =
+      await Promise.all([
+        supabase
+          .from('weights')
+          .select('*')
+          .eq('user_id', userId)
+          .order('date', { ascending: false }),
+        supabase
+          .from('profiles')
+          .select('start_weight')
+          .eq('id', userId)
+          .single(),
+      ])
 
-      if (weightError) {
-        setError(weightError.message)
-      } else {
-        setWeights(weightData || [])
-      }
-
-      if (profileData?.start_weight !== undefined) {
-        setStartWeight(profileData.start_weight)
-      }
-
-      setLoading(false)
+    if (weightError) {
+      setError(weightError.message)
+    } else {
+      setWeights(weightData || [])
     }
 
+    if (profileData?.start_weight !== undefined) {
+      setStartWeight(profileData.start_weight)
+    }
+
+    setLoading(false)
+  }
+
+  useEffect(() => {
     fetchData()
   }, [userId])
 
@@ -55,10 +55,44 @@ export default function WeightList({ userId }: { userId: string }) {
     if (!confirm) return
 
     const { error } = await supabase.from('weights').delete().eq('id', id)
+
     if (error) {
       alert('Fel vid radering: ' + error.message)
-    } else {
-      setWeights((prev) => prev.filter((w) => w.id !== id))
+      return
+    }
+
+    // Uppdatera lokal lista
+    const updatedWeights = weights.filter((w) => w.id !== id)
+    setWeights(updatedWeights)
+
+    // Räkna om stjärnor
+    const [{ data: profile }, { data: latest }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('start_weight')
+        .eq('id', userId)
+        .single(),
+
+      supabase
+        .from('weights')
+        .select('weight')
+        .eq('user_id', userId)
+        .order('date', { ascending: false })
+        .limit(1)
+        .single(),
+    ])
+
+    const startWeight = profile?.start_weight
+    const latestWeight = latest?.weight
+
+    if (startWeight && latestWeight) {
+      const lost = startWeight - latestWeight
+      const stars = Math.max(0, Math.floor(lost / 1.5))
+
+      await supabase
+        .from('profiles')
+        .update({ stars })
+        .eq('id', userId)
     }
   }
 
@@ -73,7 +107,7 @@ export default function WeightList({ userId }: { userId: string }) {
       : null
 
   return (
-    <div className="mt-6 space-y-4 max-w-md mx-auto">
+    <div className="mt-6 space-y-4 max-w-md mx-auto pb-24">
       <h2 className="text-xl font-bold text-center">Min viktresa</h2>
 
       <div className="bg-gray-100 p-4 rounded text-sm text-center space-y-1">
