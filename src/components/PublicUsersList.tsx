@@ -3,90 +3,101 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-type UserProfile = {
+type PublicUser = {
   id: string
   first_name: string
   last_name: string
-  start_weight: number
-  goal_weight: number
-  latest_weight: number | null
+  start_weight: number | null
+  goal_weight: number | null
+  stars: number
 }
 
-export default function PublicUsersList() {
-  const [users, setUsers] = useState<UserProfile[]>([])
+type LatestWeight = {
+  user_id: string
+  weight: number
+}
+
+export default function PublicUserList() {
+  const [users, setUsers] = useState<PublicUser[]>([])
+  const [weights, setWeights] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      // Hämta delade profiler
-      const { data: profiles, error } = await supabase
+    const load = async () => {
+      setLoading(true)
+
+      // Hämta offentliga profiler
+      const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, start_weight, goal_weight')
+        .select('id, first_name, last_name, start_weight, goal_weight, stars')
         .eq('public', true)
 
-      if (!profiles || error) return setLoading(false)
+      // Hämta senaste vikt per användare
+      const { data: allWeights } = await supabase
+        .from('weights')
+        .select('user_id, weight, date')
+        .order('date', { ascending: false })
 
-      // Hämta senaste vikt för varje användare
-      const userData: UserProfile[] = await Promise.all(
-        profiles.map(async (profile: any) => {
-          const { data: weight } = await supabase
-            .from('weights')
-            .select('weight')
-            .eq('user_id', profile.id)
-            .order('date', { ascending: false })
-            .limit(1)
-            .single()
+      // Gruppera senaste vikt per user_id
+      const latestByUser: Record<string, number> = {}
+      for (const entry of allWeights || []) {
+        if (!latestByUser[entry.user_id]) {
+          latestByUser[entry.user_id] = entry.weight
+        }
+      }
 
-          return {
-            ...profile,
-            latest_weight: weight?.weight ?? null,
-          }
-        })
-      )
-
-      setUsers(userData)
+      setUsers(profiles || [])
+      setWeights(latestByUser)
       setLoading(false)
     }
 
-    fetchUsers()
+    load()
   }, [])
 
-  if (loading) return <p>Laddar användare...</p>
+  const getMedal = (stars: number) => {
+    if (stars >= 20) return '🏆 Legend'
+    if (stars >= 15) return '🥇 Guld'
+    if (stars >= 10) return '🥈 Silver'
+    if (stars >= 5) return '🥉 Brons'
+    return ''
+  }
+
+  const getProgress = (
+    start: number | null,
+    goal: number | null,
+    current: number | null
+  ): string => {
+    if (start === null || goal === null || current === null) return '-'
+    if (start <= goal) return '-'
+    const progress = ((start - current) / (start - goal)) * 100
+    return `${Math.min(100, Math.max(0, Math.round(progress)))}%`
+  }
+
+  if (loading) return <p className="text-center">Laddar användare...</p>
 
   return (
-    <div className="mt-6 space-y-4">
-      <h2 className="text-xl font-bold">Delade profiler</h2>
-      <ul className="space-y-3">
-        {users.map((u) => {
-          const diffKg =
-            u.latest_weight !== null ? u.latest_weight - u.goal_weight : null
-          const totalKg =
-            u.start_weight !== null ? u.start_weight - u.goal_weight : null
-          const progress =
-            diffKg !== null && totalKg !== null && totalKg > 0
-              ? Math.min(100, Math.round(((totalKg - diffKg) / totalKg) * 100))
-              : null
+    <div className="max-w-md mx-auto mt-6 space-y-4">
+      <h2 className="text-xl font-bold text-center">Andras framsteg</h2>
 
-          return (
-            <li key={u.id} className="p-3 border rounded bg-white shadow-sm">
-              <p className="font-semibold">
-                {u.first_name} {u.last_name}
-              </p>
-              {u.latest_weight !== null && u.goal_weight !== null && (
-                <p className="text-sm">
-                  Senast loggat: {u.latest_weight} kg – mål: {u.goal_weight} kg
-                </p>
-              )}
-              {diffKg !== null && progress !== null && (
-                <p className="text-sm text-green-700">
-                  {Math.max(0, diffKg).toFixed(1)} kg kvar (
-                  {progress}% mot målet)
-                </p>
-              )}
-            </li>
-          )
-        })}
-      </ul>
+      {users.map((user) => {
+        const latest = weights[user.id] ?? null
+        const medal = getMedal(user.stars)
+        const progress = getProgress(user.start_weight, user.goal_weight, latest)
+
+        return (
+          <div
+            key={user.id}
+            className="p-3 bg-white shadow rounded border text-sm space-y-1"
+          >
+            <p className="font-semibold">
+              {user.first_name} {user.last_name}
+            </p>
+            {latest && <p>Senaste vikt: {latest.toFixed(1)} kg</p>}
+            <p>Uppnått mål till: <strong>{progress}</strong></p>
+            {medal && <p className="text-lg">{medal}</p>}
+          </div>
+        )
+      })}
     </div>
   )
 }
