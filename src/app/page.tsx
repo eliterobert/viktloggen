@@ -1,0 +1,80 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { supabase } from '../app/lib/supabase'
+import Auth from '../components/Auth'
+import WeightForm from '../components/WeightForm'
+import WeightList from '../components/WeightList'
+import NavMenu, { PageView } from '../components/NavMenu'
+import ProfileForm from '../components/ProfileForm'
+import PublicUsersList from '../components/PublicUsersList'
+
+export default function Home() {
+  const [session, setSession] = useState<any>(null)
+  const [view, setView] = useState<PageView>('log')
+  const [profile, setProfile] = useState<{ first_name: string; last_name: string } | null>(null)
+
+  useEffect(() => {
+    // Hämta inloggningssession
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  // Hämta profilinformation
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!session?.user) return
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', session.user.id)
+        .single()
+
+      if (!error && data) {
+        setProfile({ first_name: data.first_name, last_name: data.last_name })
+      }
+    }
+
+    fetchProfile()
+  }, [session])
+
+  return (
+    <main className="p-4 max-w-xl mx-auto space-y-6">
+      {!session ? (
+        <Auth />
+      ) : (
+        <>
+        <NavMenu currentView={view} onChange={setView} />
+    <div className="pt-4 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">
+          Välkommen{profile ? `, ${profile.first_name} ${profile.last_name}` : ''}!
+        </h1>
+      </div>
+
+      {view === 'log' && <WeightForm userId={session.user.id} />}
+      {view === 'list' && <WeightList userId={session.user.id} />}
+{view === 'profile' && (
+  <ProfileForm
+    userId={session.user.id}
+    onProfileUpdate={(updated) => setProfile(updated)}
+  />
+)}
+{view === 'users' && <PublicUsersList />}
+    </div>
+  </>
+)}
+    </main>
+  )
+}
