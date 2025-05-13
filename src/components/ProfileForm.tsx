@@ -92,8 +92,15 @@ export default function ProfileForm({
         )
       : null
 
-  const renderStars = (count: number) =>
-    '⭐'.repeat(count).padEnd(5, '☆') // max 5 synliga (valfritt)
+  const renderStars = (count: number) => '⭐'.repeat(count)
+
+  const getMedal = (stars: number) => {
+    if (stars >= 20) return '🏆 Legend'
+    if (stars >= 15) return '🥇 Guld'
+    if (stars >= 10) return '🥈 Silver'
+    if (stars >= 5) return '🥉 Brons'
+    return ''
+  }
 
   if (loading) return <p className="text-center">Laddar profil...</p>
 
@@ -157,7 +164,7 @@ export default function ProfileForm({
         </label>
       </div>
 
-      {/* Info */}
+      {/* Viktinfo */}
       {latestWeight !== null && (
         <p className="text-sm text-gray-600">
           Senast loggad vikt: <strong>{latestWeight} kg</strong>
@@ -171,22 +178,18 @@ export default function ProfileForm({
         </div>
       )}
 
-{stars !== null && (
-  <div className="bg-yellow-50 p-3 rounded text-sm text-center space-y-2">
-    <div>
-      🌟 Du har samlat <strong>{stars}</strong> stjärna{stars === 1 ? '' : 'r'}!
-    </div>
-    <div className="text-xl">{renderStars(Math.min(stars, 5))}</div>
-
-    {/* Medaljer */}
-    <div className="pt-2">
-      {stars >= 20 && <div className="text-2xl">🏆 Legend</div>}
-      {stars >= 15 && <div className="text-2xl">🥇 Guld</div>}
-      {stars >= 10 && <div className="text-2xl">🥈 Silver</div>}
-      {stars >= 5 && <div className="text-2xl">🥉 Brons</div>}
-    </div>
-  </div>
-)}
+      {/* Stjärnor och medalj */}
+      {stars !== null && (
+        <div className="bg-yellow-50 p-3 rounded text-sm text-center space-y-2">
+          <div>
+            🌟 Du har samlat <strong>{stars}</strong> stjärna{stars === 1 ? '' : 'r'}!
+          </div>
+          <div className="text-xl break-words">{renderStars(stars)}</div>
+          {stars >= 5 && (
+            <div className="pt-2 text-2xl">{getMedal(stars)}</div>
+          )}
+        </div>
+      )}
 
       {/* Spara */}
       <button
