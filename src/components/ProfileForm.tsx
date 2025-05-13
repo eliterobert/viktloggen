@@ -175,6 +175,7 @@ export default function ProfileForm({
       </button>
 
       {message && <p className="text-green-600 text-sm text-center">{message}</p>}
+      <div className="pb-24" />
     </form>
   )
 }
