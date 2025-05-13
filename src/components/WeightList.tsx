@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '../app/lib/supabase'
+import { supabase } from '../lib/supabase'
 
 type WeightEntry = {
   id: string
@@ -28,6 +28,7 @@ export default function WeightList({ userId }: { userId: string }) {
     } else {
       setWeights(data || [])
     }
+
     setLoading(false)
   }
 
@@ -36,42 +37,42 @@ export default function WeightList({ userId }: { userId: string }) {
   }, [userId])
 
   const handleDelete = async (id: string) => {
-    const confirm = window.confirm('Är du säker på att du vill radera denna viktpost?')
+    const confirm = window.confirm('Radera denna viktpost?')
     if (!confirm) return
 
     const { error } = await supabase.from('weights').delete().eq('id', id)
 
     if (error) {
-      alert('Kunde inte radera posten: ' + error.message)
+      alert('Fel vid radering: ' + error.message)
     } else {
       setWeights((prev) => prev.filter((w) => w.id !== id))
     }
   }
 
-  if (loading) return <p>Laddar viktdata...</p>
-  if (error) return <p className="text-red-500">Fel: {error}</p>
-  if (weights.length === 0) return <p>Inga viktinlägg ännu.</p>
+  if (loading) return <p className="text-center">Laddar viktdata...</p>
+  if (error) return <p className="text-red-500 text-center">{error}</p>
+  if (weights.length === 0) return <p className="text-center">Inga vikter inloggade ännu.</p>
 
   return (
-    <div className="mt-6 space-y-4">
-      <h2 className="text-xl font-bold">Dina viktinlägg</h2>
+    <div className="mt-6 space-y-4 max-w-md mx-auto">
+      <h2 className="text-xl font-bold text-center">Viktlista</h2>
+
       <ul className="space-y-2">
         {weights.map((entry) => (
           <li
             key={entry.id}
-            className="p-3 border rounded bg-white shadow-sm flex justify-between items-center"
+            className="p-3 border rounded bg-white shadow-sm text-sm flex justify-between items-start"
           >
-            <div>
-              <div>
-                <strong>{entry.weight} kg</strong> – {entry.date}
-              </div>
+            <div className="space-y-1">
+              <p className="font-semibold">{entry.weight.toFixed(1)} kg</p>
+              <p className="text-gray-600 text-xs">{entry.date}</p>
               {entry.public && (
-                <span className="text-sm text-green-600 font-medium">Delad</span>
+                <span className="text-green-600 text-xs">Delad</span>
               )}
             </div>
             <button
               onClick={() => handleDelete(entry.id)}
-              className="text-red-600 text-sm hover:underline"
+              className="text-red-600 text-xs hover:underline"
             >
               Radera
             </button>

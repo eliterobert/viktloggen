@@ -1,0 +1,1 @@
+export type PageView = 'log' | 'list' | 'profile' | 'users'

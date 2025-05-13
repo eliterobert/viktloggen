@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '../app/lib/supabase'
+import { supabase } from '../lib/supabase'
 import ForgotPassword from './ForgotPassword'
 
 export default function Auth() {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '../app/lib/supabase'
+import { supabase } from '../lib/supabase'
 
 export default function ProfileForm({
   userId,
@@ -19,10 +19,9 @@ export default function ProfileForm({
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
 
-  // Ladda profil + senaste vikt
   useEffect(() => {
     const loadProfile = async () => {
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('first_name, last_name, start_weight, goal_weight, public')
         .eq('id', userId)
@@ -36,7 +35,7 @@ export default function ProfileForm({
         setIsPublic(profile.public ?? false)
       }
 
-      const { data: weight, error: weightError } = await supabase
+      const { data: weight } = await supabase
         .from('weights')
         .select('weight')
         .eq('user_id', userId)
@@ -77,96 +76,105 @@ export default function ProfileForm({
     }
   }
 
-  // Beräkna % till mål
-  let progress = null
-  if (
+  const progress =
     startWeight !== null &&
     latestWeight !== null &&
     goalWeight !== null &&
     startWeight > goalWeight
-  ) {
-    const totalToLose = startWeight - goalWeight
-    const lost = startWeight - latestWeight
-    progress = Math.min(100, Math.max(0, Math.round((lost / totalToLose) * 100)))
-  }
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            Math.round(((startWeight - latestWeight) / (startWeight - goalWeight)) * 100)
+          )
+        )
+      : null
 
-  if (loading) return <p>Laddar profil...</p>
+  if (loading) return <p className="text-center">Laddar profil...</p>
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto mt-4">
-      <h2 className="text-xl font-bold">Din profil</h2>
+    <form
+      onSubmit={handleSubmit}
+      className="w-full max-w-md mx-auto p-4 space-y-5 bg-white shadow rounded-md"
+    >
+      <h2 className="text-xl font-bold text-center">Din profil</h2>
 
       {/* Namn */}
-      <div>
+      <div className="space-y-1">
         <label className="block text-sm font-medium">Förnamn</label>
         <input
-          className="w-full p-2 border rounded"
+          className="w-full p-3 text-base border rounded"
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
         />
       </div>
 
-      <div>
+      <div className="space-y-1">
         <label className="block text-sm font-medium">Efternamn</label>
         <input
-          className="w-full p-2 border rounded"
+          className="w-full p-3 text-base border rounded"
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
         />
       </div>
 
-      {/* Viktmål */}
-      <div>
+      {/* Vikt */}
+      <div className="space-y-1">
         <label className="block text-sm font-medium">Startvikt (kg)</label>
         <input
           type="number"
-          className="w-full p-2 border rounded"
+          className="w-full p-3 text-base border rounded"
           value={startWeight ?? ''}
           onChange={(e) => setStartWeight(parseFloat(e.target.value))}
         />
       </div>
 
-      <div>
+      <div className="space-y-1">
         <label className="block text-sm font-medium">Målvikt (kg)</label>
         <input
           type="number"
-          className="w-full p-2 border rounded"
+          className="w-full p-3 text-base border rounded"
           value={goalWeight ?? ''}
           onChange={(e) => setGoalWeight(parseFloat(e.target.value))}
         />
       </div>
 
       {/* Public profil */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center gap-2">
         <input
           type="checkbox"
           checked={isPublic}
           onChange={(e) => setIsPublic(e.target.checked)}
+          id="public"
         />
-        <label>Visa min profil offentligt</label>
+        <label htmlFor="public" className="text-sm">
+          Visa min profil offentligt
+        </label>
       </div>
 
-      {/* Info om vikt & mål */}
+      {/* Info */}
       {latestWeight !== null && (
         <p className="text-sm text-gray-600">
-          Senast loggat: <strong>{latestWeight} kg</strong>
+          Senast loggad vikt: <strong>{latestWeight} kg</strong>
         </p>
       )}
 
       {progress !== null && (
-        <div className="bg-gray-100 p-2 rounded">
-          <p>
-            Du har nått{' '}
-            <span className="font-bold text-green-600">{progress}%</span> av ditt mål.
-          </p>
+        <div className="bg-gray-100 p-3 rounded text-sm text-center">
+          Du har nått{' '}
+          <span className="font-bold text-green-600">{progress}%</span> av ditt mål.
         </div>
       )}
 
-      <button className="bg-blue-500 text-white px-4 py-2 rounded" type="submit">
+      {/* Spara */}
+      <button
+        type="submit"
+        className="w-full py-3 text-base bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+      >
         Spara profil
       </button>
 
-      {message && <p className="text-green-600">{message}</p>}
+      {message && <p className="text-green-600 text-sm text-center">{message}</p>}
     </form>
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '../app/lib/supabase'
+import { supabase } from '../lib/supabase'
 
 export default function ForgotPassword({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState('')

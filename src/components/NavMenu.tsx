@@ -1,7 +1,7 @@
 'use client'
 
-import { supabase } from '../app/lib/supabase'
-export type PageView = 'log' | 'list' | 'profile' | 'users'
+import { supabase } from '../lib/supabase'
+import { PageView } from '../types/navigation'
 export default function NavMenu({
   currentView,
   onChange,

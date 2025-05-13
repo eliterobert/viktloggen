@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '../app/lib/supabase'
+import { supabase } from '../lib/supabase'
 import Auth from '../components/Auth'
 import WeightForm from '../components/WeightForm'
 import WeightList from '../components/WeightList'
-import NavMenu, { PageView } from '../components/NavMenu'
+import NavMenu from '../components/NavMenu'
+import MobileNav from '../components/MobileNav'
+import { PageView } from '../types/navigation'
 import ProfileForm from '../components/ProfileForm'
 import PublicUsersList from '../components/PublicUsersList'
 
@@ -55,7 +57,12 @@ export default function Home() {
         <Auth />
       ) : (
         <>
-        <NavMenu currentView={view} onChange={setView} />
+<div className="block sm:hidden">
+  <MobileNav currentView={view} onChange={setView} />
+</div>
+<div className="hidden sm:block">
+  <NavMenu currentView={view} onChange={setView} />
+</div>
     <div className="pt-4 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">
