@@ -10,6 +10,7 @@ import MobileNav from '../components/MobileNav'
 import { PageView } from '../types/navigation'
 import ProfileForm from '../components/ProfileForm'
 import PublicUsersList from '../components/PublicUsersList'
+import { Smile } from 'lucide-react'
 
 export default function Home() {
   const [session, setSession] = useState<any>(null)
@@ -64,12 +65,10 @@ export default function Home() {
   <NavMenu currentView={view} onChange={setView} />
 </div>
     <div className="pt-4 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">
-          Välkommen{profile ? `, ${profile.first_name} ${profile.last_name}` : ''}!
-        </h1>
-      </div>
-
+      <div className="flex justify-between items-center"></div>
+<h1 className="text-lg sm:text-xl font-semibold text-center truncate">
+   Välkommen {profile?.first_name} 👋
+</h1>
       {view === 'log' && <WeightForm userId={session.user.id} />}
       {view === 'list' && <WeightList userId={session.user.id} />}
 {view === 'profile' && (
