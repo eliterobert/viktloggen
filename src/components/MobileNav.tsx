@@ -1,14 +1,9 @@
 'use client'
 
-import {
-  Home,
-  ListOrdered,
-  User,
-  Users,
-  LogOut,
-} from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { PageView } from '../types/navigation'
+import { Home, User, PlusCircle, List, Users } from 'lucide-react'
+
+type PageView = 'log' | 'list' | 'profile' | 'users'
 
 export default function MobileNav({
   currentView,
@@ -19,40 +14,41 @@ export default function MobileNav({
 }) {
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    location.reload()
+    window.location.href = '/'
   }
 
-  const items = [
-    { icon: Home, label: 'Logga', view: 'log' },
-    { icon: ListOrdered, label: 'Lista', view: 'list' },
-    { icon: User, label: 'Profil', view: 'profile' },
-    { icon: Users, label: 'Användare', view: 'users' },
+  const navItems: { view: PageView; label: string; icon: React.ElementType }[] = [
+    { view: 'log', label: 'Logga', icon: PlusCircle },
+    { view: 'list', label: 'Viktlista', icon: List },
+    { view: 'profile', label: 'Profil', icon: User },
+    { view: 'users', label: 'Användare', icon: Users },
   ]
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 bg-white border-t shadow sm:hidden">
-      <div className="flex justify-around items-center py-2">
-        {items.map(({ icon: Icon, label, view }) => (
-          <button
-            key={view}
-            onClick={() => onChange(view as PageView)}
-            className={`flex flex-col items-center text-xs ${
-              currentView === view ? 'text-blue-600' : 'text-gray-600'
-            }`}
-          >
-            <Icon size={22} />
-            <span>{label}</span>
-          </button>
+    <div className="sm:hidden fixed bottom-0 inset-x-0 bg-white border-t shadow z-50">
+      <ul className="flex justify-around items-center text-xs">
+        {navItems.map(({ view, label, icon: Icon }) => (
+          <li key={view}>
+            <button
+              onClick={() => onChange(view)}
+              className={`flex flex-col items-center py-2 px-1 ${
+                currentView === view ? 'text-amber-600 font-semibold' : 'text-gray-500'
+              }`}
+            >
+              <Icon size={20} />
+              <span>{label}</span>
+            </button>
+          </li>
         ))}
-
+      </ul>
+      <div className="text-center py-2 border-t">
         <button
           onClick={handleLogout}
-          className="flex flex-col items-center text-xs text-red-600"
+          className="text-sm text-red-600"
         >
-          <LogOut size={22} />
-          <span>Logga ut</span>
+          Logga ut
         </button>
       </div>
-    </nav>
+    </div>
   )
 }

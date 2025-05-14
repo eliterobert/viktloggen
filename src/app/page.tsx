@@ -7,34 +7,33 @@ import WeightForm from '../components/WeightForm'
 import WeightList from '../components/WeightList'
 import NavMenu from '../components/NavMenu'
 import MobileNav from '../components/MobileNav'
-import { PageView } from '../types/navigation'
 import ProfileForm from '../components/ProfileForm'
 import PublicUsersList from '../components/PublicUsersList'
-import { Smile } from 'lucide-react'
+
+type PageView = 'log' | 'list' | 'profile' | 'users'
 
 export default function Home() {
   const [session, setSession] = useState<any>(null)
   const [view, setView] = useState<PageView>('log')
   const [profile, setProfile] = useState<{ first_name: string; last_name: string } | null>(null)
 
+  // Hämta och lyssna på session
   useEffect(() => {
-    // Hämta inloggningssession
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       setSession(session)
-    })
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-
-    return () => {
-      subscription.unsubscribe()
     }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    getSession()
+
+    return () => subscription.unsubscribe()
   }, [])
 
-  // Hämta profilinformation
+  // Ladda profilnamn
   useEffect(() => {
     const fetchProfile = async () => {
       if (!session?.user) return
@@ -52,35 +51,41 @@ export default function Home() {
     fetchProfile()
   }, [session])
 
+  if (!session) {
+    return (
+      <main className="p-4 max-w-xl mx-auto">
+        <Auth />
+      </main>
+    )
+  }
+
   return (
     <main className="p-4 max-w-xl mx-auto space-y-6">
-      {!session ? (
-        <Auth />
-      ) : (
-        <>
-<div className="block sm:hidden">
-  <MobileNav currentView={view} onChange={setView} />
-</div>
-<div className="hidden sm:block">
-  <NavMenu currentView={view} onChange={setView} />
-</div>
-    <div className="pt-4 space-y-6">
-      <div className="flex justify-between items-center"></div>
-<h1 className="text-lg sm:text-xl font-semibold text-center truncate">
-   Välkommen {profile?.first_name} 👋
-</h1>
-      {view === 'log' && <WeightForm userId={session.user.id} />}
-      {view === 'list' && <WeightList userId={session.user.id} />}
-{view === 'profile' && (
-  <ProfileForm
-    userId={session.user.id}
-    onProfileUpdate={(updated) => setProfile(updated)}
-  />
-)}
-{view === 'users' && <PublicUsersList />}
-    </div>
-  </>
-)}
+      {/* Navigation */}
+      <div className="block sm:hidden">
+        <MobileNav currentView={view} onChange={setView} />
+      </div>
+      <div className="hidden sm:block">
+        <NavMenu currentView={view} onChange={setView} />
+      </div>
+
+      {/* Välkomsttext */}
+      <div className="pt-4 space-y-6">
+        <h1 className="text-lg sm:text-xl font-semibold text-center truncate">
+          Välkommen {profile?.first_name} 👋
+        </h1>
+
+        {/* Vyer */}
+        {view === 'log' && <WeightForm userId={session.user.id} />}
+        {view === 'list' && <WeightList userId={session.user.id} />}
+        {view === 'profile' && (
+          <ProfileForm
+            userId={session.user.id}
+            onProfileUpdate={(updated) => setProfile(updated)}
+          />
+        )}
+        {view === 'users' && <PublicUsersList />}
+      </div>
     </main>
   )
 }

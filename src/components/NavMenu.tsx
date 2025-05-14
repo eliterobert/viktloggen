@@ -1,7 +1,10 @@
 'use client'
 
 import { supabase } from '../lib/supabase'
-import { PageView } from '../types/navigation'
+import { Home, User, PlusCircle, List, LogOut, Users } from 'lucide-react'
+
+type PageView = 'log' | 'list' | 'profile' | 'users'
+
 export default function NavMenu({
   currentView,
   onChange,
@@ -11,39 +14,44 @@ export default function NavMenu({
 }) {
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    location.reload()
+    window.location.href = '/'
   }
 
-  return (
-    <nav className="sticky top-0 z-50 bg-white border-b shadow-sm px-2 py-2">
-      <div className="flex flex-wrap gap-2 justify-center sm:justify-start max-w-screen-md mx-auto">
-        {[
-          { label: 'Logga vikt', value: 'log' },
-          { label: 'Viktlista', value: 'list' },
-          { label: 'Profil', value: 'profile' },
-          { label: 'Alla användare', value: 'users' },
-        ].map((item) => (
-          <button
-            key={item.value}
-            onClick={() => onChange(item.value as PageView)}
-            className={`px-4 py-2 rounded text-sm ${
-              currentView === item.value
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-gray-800'
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
+  const navItems: { view: PageView; label: string; icon: React.ElementType }[] = [
+    { view: 'log', label: 'Logga', icon: PlusCircle },
+    { view: 'list', label: 'Viktlista', icon: List },
+    { view: 'profile', label: 'Profil', icon: User },
+    { view: 'users', label: 'Användare', icon: Users },
+  ]
 
-        {/* Logga ut-knapp */}
-        <button
-          onClick={handleLogout}
-          className="ml-auto px-4 py-2 rounded text-sm bg-red-500 text-white hover:bg-red-600"
-        >
-          Logga ut
-        </button>
-      </div>
+  return (
+    <nav className="hidden sm:block w-full max-w-xs mx-auto py-4">
+      <ul className="space-y-2">
+        {navItems.map(({ view, label, icon: Icon }) => (
+          <li key={view}>
+            <button
+              onClick={() => onChange(view)}
+              className={`flex items-center gap-2 w-full p-2 rounded-md transition ${
+                currentView === view
+                  ? 'bg-amber-100 text-amber-700 font-semibold'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Icon size={20} />
+              <span>{label}</span>
+            </button>
+          </li>
+        ))}
+        <li>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2 p-2 text-red-600 hover:bg-red-50 rounded-md"
+          >
+            <LogOut size={20} />
+            <span>Logga ut</span>
+          </button>
+        </li>
+      </ul>
     </nav>
   )
 }
