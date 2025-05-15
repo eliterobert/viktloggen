@@ -43,7 +43,7 @@ export default function ProfileForm({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setProfile((prev) => prev ? { ...prev, [name]: value } : null)
+    setProfile((prev) => (prev ? { ...prev, [name]: value } : null))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,12 +74,38 @@ export default function ProfileForm({
     setLoading(false)
   }
 
+  const handleDeleteAccount = async () => {
+    const confirmed = confirm('Är du säker på att du vill radera ditt konto och all data?')
+    if (!confirmed) return
+
+    try {
+      const response = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+      })
+
+      if (response.ok) {
+        alert('Ditt konto har raderats.')
+        await supabase.auth.signOut()
+        window.location.reload()
+      } else {
+        const errorText = await response.text()
+        alert('Kunde inte radera konto: ' + errorText)
+      }
+    } catch (err) {
+      alert('Ett fel uppstod.')
+      console.error(err)
+    }
+  }
+
   if (loading || !profile) return <p>Laddar profil...</p>
 
   const lost = profile.start_weight - profile.goal_weight
-  const progress = profile.start_weight && lost > 0
-    ? Math.max(0, Math.min(100, ((profile.start_weight - profile.goal_weight) / lost) * 100))
-    : 0
+  const progress =
+    profile.start_weight && lost > 0
+      ? Math.max(0, Math.min(100, ((profile.start_weight - profile.goal_weight) / lost) * 100))
+      : 0
 
   return (
     <form
@@ -88,43 +114,53 @@ export default function ProfileForm({
     >
       <h2 className="text-xl font-bold text-center">Din profil</h2>
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          name="first_name"
-          placeholder="Förnamn"
-          value={profile.first_name}
-          onChange={handleChange}
-          className="w-1/2 p-2 border rounded"
-        />
-        <input
-          type="text"
-          name="last_name"
-          placeholder="Efternamn"
-          value={profile.last_name}
-          onChange={handleChange}
-          className="w-1/2 p-2 border rounded"
-        />
-      </div>
+<div className="flex gap-2">
+  <div className="w-1/2 space-y-1">
+    <label className="text-sm font-medium">Förnamn</label>
+    <input
+      type="text"
+      name="first_name"
+      value={profile.first_name ?? ''}
+      onChange={handleChange}
+      className="w-full p-2 border rounded"
+    />
+  </div>
 
-      <div className="flex gap-2">
-        <input
-          type="number"
-          name="start_weight"
-          placeholder="Startvikt"
-          value={profile.start_weight}
-          onChange={handleChange}
-          className="w-1/2 p-2 border rounded"
-        />
-        <input
-          type="number"
-          name="goal_weight"
-          placeholder="Målvikt"
-          value={profile.goal_weight}
-          onChange={handleChange}
-          className="w-1/2 p-2 border rounded"
-        />
-      </div>
+  <div className="w-1/2 space-y-1">
+    <label className="text-sm font-medium">Efternamn</label>
+    <input
+      type="text"
+      name="last_name"
+      value={profile.last_name ?? ''}
+      onChange={handleChange}
+      className="w-full p-2 border rounded"
+    />
+  </div>
+</div>
+
+<div className="flex gap-2">
+  <div className="w-1/2 space-y-1">
+    <label className="text-sm font-medium">Startvikt</label>
+    <input
+      type="number"
+      name="start_weight"
+      value={profile.start_weight ?? ''}
+      onChange={handleChange}
+      className="w-full p-2 border rounded"
+    />
+  </div>
+
+  <div className="w-1/2 space-y-1">
+    <label className="text-sm font-medium">Målvikt</label>
+    <input
+      type="number"
+      name="goal_weight"
+      value={profile.goal_weight ?? ''}
+      onChange={handleChange}
+      className="w-full p-2 border rounded"
+    />
+  </div>
+</div>
 
       <div className="flex items-center gap-2 text-sm">
         <input
@@ -132,7 +168,7 @@ export default function ProfileForm({
           id="public"
           checked={!!profile.public}
           onChange={(e) =>
-            setProfile((prev) => prev ? { ...prev, public: e.target.checked } : prev)
+            setProfile((prev) => (prev ? { ...prev, public: e.target.checked } : prev))
           }
         />
         <label htmlFor="public">Dela mina vikter offentligt</label>
@@ -140,9 +176,10 @@ export default function ProfileForm({
 
       <div className="text-sm text-gray-700 space-y-1">
         <p>⭐️ Du har {profile.stars} stjärnor</p>
-<p>
-  🎯 Du har {Math.max(0, profile.start_weight - profile.goal_weight).toFixed(1)} kg kvar till målet
-</p>
+        <p>
+          🎯 Du har {Math.max(0, profile.start_weight - profile.goal_weight).toFixed(1)} kg kvar
+          till målet
+        </p>
       </div>
 
       <button
@@ -152,10 +189,16 @@ export default function ProfileForm({
         {loading ? 'Sparar...' : 'Spara profil'}
       </button>
 
+      <button
+        onClick={handleDeleteAccount}
+        type="button"
+        className="w-full mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded shadow transition"
+      >
+        🗑 Radera konto och all data
+      </button>
+
       {message && (
-        <div className="text-center text-sm text-amber-600 font-medium">
-          {message}
-        </div>
+        <div className="text-center text-sm text-amber-600 font-medium">{message}</div>
       )}
     </form>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function WeightForm({ userId }: { userId: string }) {
@@ -16,19 +16,18 @@ export default function WeightForm({ userId }: { userId: string }) {
 
     const newWeight = parseFloat(weight)
 
-    const { data: insertData, error } = await supabase.from('weights').insert({
-      user_id: userId,
-      weight: newWeight,
-      date,
-    }).select().single()
+    // 👇 Viktloggning utan returdata (löser 406)
+    const { error: insertError } = await (supabase
+      .from('weights')
+      .insert([{ user_id: userId, weight: newWeight, date }], { returning: 'minimal' } as any))
 
-    if (error || !insertData?.id) {
-      setMessage(`Fel: ${error?.message || 'Kunde inte spara'}`)
+    if (insertError) {
+      setMessage(`Fel vid sparning: ${insertError.message}`)
       setLoading(false)
       return
     }
 
-    // Hämta föregående vikt
+    // 👇 Hämta tidigare vikt för feedback
     const { data: previous } = await supabase
       .from('weights')
       .select('weight')
@@ -44,7 +43,7 @@ export default function WeightForm({ userId }: { userId: string }) {
     let feedback = 'Vikt registrerad!'
     if (lost > 0.4) {
       if (lost >= 3) feedback = `🥳 Superstjärna! Du har tappat ${lost.toFixed(1)} kg!`
-      else if (lost >= 1.5) feedback = `🌟 Wow! ${lost.toFixed(1)} kg ner – det här går ju galant!`
+      else if (lost >= 1.5) feedback = `🌟 ${lost.toFixed(1)} kg ner – det här går galant!`
       else if (lost >= 1) feedback = `🏃‍♂️ Du är på gång! -${lost.toFixed(1)} kg, starkt!`
       else feedback = `💪 Bra jobbat! Ett halvt kilo bort!`
     } else if (lost < 0) {
@@ -53,29 +52,34 @@ export default function WeightForm({ userId }: { userId: string }) {
       feedback = '👍 Du håller koll – det är det viktigaste!'
     }
 
-    // Uppdatera stjärnor i profilen
-    const { data: profile } = await supabase
+// 🔍 Hämta startvikt och nuvarande stjärnor
+const { data: profile } = await supabase
+  .from('profiles')
+  .select('start_weight, stars')
+  .eq('id', userId)
+  .single()
+
+const startWeight = profile?.start_weight
+const currentStars = profile?.stars ?? 0
+
+if (startWeight && newWeight < startWeight) {
+  const totalLost = startWeight - newWeight
+  const calculatedStars = Math.floor(totalLost / 1.5)
+
+  console.log('Total viktminskning:', totalLost)
+  console.log('Nuvarande stjärnor:', currentStars, 'Beräknade:', calculatedStars)
+
+  if (calculatedStars !== currentStars) {
+    const { error: starError } = await supabase
       .from('profiles')
-      .select('start_weight, stars')
+      .update({ stars: calculatedStars })
       .eq('id', userId)
-      .single()
 
-    const startWeight = profile?.start_weight
-    const currentStars = profile?.stars ?? 0
-
-    if (startWeight && newWeight < startWeight) {
-      const totalLost = startWeight - newWeight
-      const calculatedStars = Math.floor(totalLost / 1.5)
-
-      if (calculatedStars > currentStars) {
-        await supabase
-          .from('profiles')
-          .update({ stars: calculatedStars })
-          .eq('id', userId)
-
-        feedback += ` 🎉 Du har nu ${calculatedStars} ⭐️!`
-      }
+    if (!starError) {
+      feedback += ` 🎉 Du har nu ${calculatedStars} ⭐️!`
     }
+  }
+}
 
     setMessage(feedback)
     setWeight('')
