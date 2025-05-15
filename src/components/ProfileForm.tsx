@@ -33,6 +33,15 @@ export default function ProfileForm({
 
       if (!error && data) {
         setProfile(data)
+      } else {
+        setProfile({
+          first_name: '',
+          last_name: '',
+          start_weight: 0,
+          goal_weight: 0,
+          stars: 0,
+          public: false,
+        })
       }
 
       setLoading(false)
@@ -44,12 +53,7 @@ export default function ProfileForm({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
     setProfile((prev) =>
-      prev
-        ? {
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value,
-          }
-        : null
+      prev ? { ...prev, [name]: type === 'checkbox' ? checked : value } : null
     )
   }
 
@@ -59,56 +63,31 @@ export default function ProfileForm({
     setLoading(true)
 
     const updates = {
-      first_name: profile?.first_name ?? '',
-      last_name: profile?.last_name ?? '',
-      start_weight: Number(profile?.start_weight),
-      goal_weight: Number(profile?.goal_weight),
+      id: userId,
+      first_name: profile?.first_name || '',
+      last_name: profile?.last_name || '',
+      start_weight: Number(profile?.start_weight) || 0,
+      goal_weight: Number(profile?.goal_weight) || 0,
       public: profile?.public ?? false,
     }
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', userId)
+    const { error } = await supabase.from('profiles').upsert(updates)
 
     if (!error) {
-      setMessage('Profil uppdaterad!')
+      setMessage('Profil sparad!')
       onProfileUpdate?.(updates)
     } else {
-      setMessage('Kunde inte uppdatera profilen.')
+      setMessage('Kunde inte spara profilen.')
     }
 
     setLoading(false)
   }
 
-  const handleDeleteAccount = async () => {
-    const confirmed = confirm('Är du säker på att du vill radera ditt konto och all data?')
-    if (!confirmed) return
+  if (loading) return <p className="text-center">Laddar profil...</p>
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      alert('Kunde inte hämta användare.')
-      return
-    }
-
-    const response = await fetch('/api/delete-user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user.id }),
-    })
-
-    if (response.ok) {
-      await supabase.auth.signOut()
-      window.location.reload()
-    } else {
-      const errorText = await response.text()
-      alert('Kunde inte radera konto: ' + errorText)
-    }
-  }
-
-  if (loading || !profile) return <p>Laddar profil...</p>
-
-  const lost = profile.start_weight - profile.goal_weight
+  const lost = profile?.start_weight && profile?.goal_weight
+    ? profile.start_weight - profile.goal_weight
+    : 0
 
   return (
     <form
@@ -118,49 +97,41 @@ export default function ProfileForm({
       <h2 className="text-xl font-bold text-center">Din profil</h2>
 
       <div className="flex gap-2">
-        <div className="w-1/2 space-y-1">
-          <label className="text-sm font-medium">Förnamn</label>
-          <input
-            type="text"
-            name="first_name"
-            value={profile.first_name ?? ''}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
-        </div>
-        <div className="w-1/2 space-y-1">
-          <label className="text-sm font-medium">Efternamn</label>
-          <input
-            type="text"
-            name="last_name"
-            value={profile.last_name ?? ''}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
-        </div>
+        <input
+          type="text"
+          name="first_name"
+          placeholder="Förnamn"
+          value={profile?.first_name || ''}
+          onChange={handleChange}
+          className="w-1/2 p-2 border rounded"
+        />
+        <input
+          type="text"
+          name="last_name"
+          placeholder="Efternamn"
+          value={profile?.last_name || ''}
+          onChange={handleChange}
+          className="w-1/2 p-2 border rounded"
+        />
       </div>
 
       <div className="flex gap-2">
-        <div className="w-1/2 space-y-1">
-          <label className="text-sm font-medium">Startvikt</label>
-          <input
-            type="number"
-            name="start_weight"
-            value={profile.start_weight ?? ''}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
-        </div>
-        <div className="w-1/2 space-y-1">
-          <label className="text-sm font-medium">Målvikt</label>
-          <input
-            type="number"
-            name="goal_weight"
-            value={profile.goal_weight ?? ''}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
-        </div>
+        <input
+          type="number"
+          name="start_weight"
+          placeholder="Startvikt"
+          value={profile?.start_weight || ''}
+          onChange={handleChange}
+          className="w-1/2 p-2 border rounded"
+        />
+        <input
+          type="number"
+          name="goal_weight"
+          placeholder="Målvikt"
+          value={profile?.goal_weight || ''}
+          onChange={handleChange}
+          className="w-1/2 p-2 border rounded"
+        />
       </div>
 
       <div className="flex items-center gap-2 text-sm">
@@ -168,14 +139,14 @@ export default function ProfileForm({
           type="checkbox"
           id="public"
           name="public"
-          checked={!!profile.public}
+          checked={!!profile?.public}
           onChange={handleChange}
         />
         <label htmlFor="public">Dela mina vikter offentligt</label>
       </div>
 
       <div className="text-sm text-gray-700 space-y-1">
-        <p>⭐️ Du har {profile.stars} stjärnor</p>
+        <p>⭐️ Du har {profile?.stars ?? 0} stjärnor</p>
         <p>
           🎯 Du har {Math.max(0, lost).toFixed(1)} kg kvar till målet
         </p>
@@ -186,14 +157,6 @@ export default function ProfileForm({
         className="w-full py-3 text-base bg-amber-500 text-white rounded hover:bg-amber-600 transition"
       >
         {loading ? 'Sparar...' : 'Spara profil'}
-      </button>
-
-      <button
-        type="button"
-        onClick={handleDeleteAccount}
-        className="w-full mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded shadow transition"
-      >
-        🗑 Radera konto och all data
       </button>
 
       {message && (
