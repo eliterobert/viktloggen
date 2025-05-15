@@ -9,8 +9,10 @@ import NavMenu from '../components/NavMenu'
 import MobileNav from '../components/MobileNav'
 import ProfileForm from '../components/ProfileForm'
 import PublicUsersList from '../components/PublicUsersList'
+import WalkForm, { Walk } from '../components/WalkForm'
+import WalkList from '../components/WalkList'
 
-type PageView = 'log' | 'list' | 'profile' | 'users'
+type PageView = 'log' | 'profile' | 'users' | 'walks'
 
 interface Profile {
   first_name: string
@@ -24,8 +26,7 @@ interface Profile {
 export default function Home() {
   const [session, setSession] = useState<any>(null)
   const [view, setView] = useState<PageView>('log')
-
-  // ✅ Typen är nu Partial<Profile> | null – för att matcha uppdateringar
+  const [walks, setWalks] = useState<Walk[]>([])
   const [profile, setProfile] = useState<Partial<Profile> | null>(null)
 
   useEffect(() => {
@@ -63,6 +64,35 @@ export default function Home() {
     fetchProfile()
   }, [session])
 
+  useEffect(() => {
+    const fetchWalks = async () => {
+      if (!session?.user) return
+      const { data, error } = await supabase
+        .from('walks')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('date', { ascending: false })
+
+      if (!error && data) {
+        setWalks(data)
+      }
+    }
+
+    fetchWalks()
+  }, [session])
+
+  const handleDeleteWalk = async (id: string) => {
+    const confirmed = confirm('Vill du verkligen radera promenaden?')
+    if (!confirmed) return
+
+    const { error } = await supabase.from('walks').delete().eq('id', id)
+    if (!error) {
+      setWalks((prev) => prev.filter((walk) => walk.id !== id))
+    } else {
+      alert('Kunde inte ta bort promenaden.')
+    }
+  }
+
   if (!session) {
     return (
       <main className="p-4 max-w-xl mx-auto">
@@ -85,8 +115,13 @@ export default function Home() {
           Välkommen {profile?.first_name} 👋
         </h1>
 
-        {view === 'log' && <WeightForm userId={session.user.id} />}
-        {view === 'list' && <WeightList userId={session.user.id} />}
+        {view === 'log' && (
+          <>
+            <WeightForm userId={session.user.id} />
+            <WeightList userId={session.user.id} />
+          </>
+        )}
+
         {view === 'profile' && (
           <ProfileForm
             userId={session.user.id}
@@ -94,6 +129,15 @@ export default function Home() {
           />
         )}
         {view === 'users' && <PublicUsersList />}
+        {view === 'walks' && (
+          <>
+            <WalkForm
+              userId={session.user.id}
+              onNewWalk={(walk) => setWalks([walk, ...walks])}
+            />
+            <WalkList walks={walks} onDelete={handleDeleteWalk} />
+          </>
+        )}
       </div>
     </main>
   )

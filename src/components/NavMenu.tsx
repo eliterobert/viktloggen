@@ -1,9 +1,9 @@
 'use client'
 
 import { supabase } from '../lib/supabase'
-import { Home, User, PlusCircle, List, LogOut, Users } from 'lucide-react'
+import { User, PlusCircle, LogOut, Users, Footprints } from 'lucide-react'
 
-type PageView = 'log' | 'list' | 'profile' | 'users'
+type PageView = 'log' | 'profile' | 'users' | 'walks'
 
 export default function NavMenu({
   currentView,
@@ -18,8 +18,8 @@ export default function NavMenu({
   }
 
   const navItems: { view: PageView; label: string; icon: React.ElementType }[] = [
-    { view: 'log', label: 'Logga', icon: PlusCircle },
-    { view: 'list', label: 'Viktlista', icon: List },
+    { view: 'log', label: 'Viktlogg', icon: PlusCircle },
+    { view: 'walks', label: 'Promenader', icon: Footprints },
     { view: 'profile', label: 'Profil', icon: User },
     { view: 'users', label: 'Användare', icon: Users },
   ]
