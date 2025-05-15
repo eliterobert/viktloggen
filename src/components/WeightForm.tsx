@@ -1,12 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function WeightForm({ userId }: { userId: string }) {
   const [weight, setWeight] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [isPublic, setIsPublic] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -17,24 +16,22 @@ export default function WeightForm({ userId }: { userId: string }) {
 
     const newWeight = parseFloat(weight)
 
-    // 1. Spara viktpost
-    const { error } = await supabase.from('weights').insert({
+    const { data: insertData, error } = await supabase.from('weights').insert({
       user_id: userId,
       weight: newWeight,
       date,
-      public: isPublic,
-    })
+    }).select().single()
 
-    if (error) {
-      setMessage(`Fel: ${error.message}`)
+    if (error || !insertData?.id) {
+      setMessage(`Fel: ${error?.message || 'Kunde inte spara'}`)
       setLoading(false)
       return
     }
 
-    // 2. Hämta tidigare vikt (för jämförelse)
+    // Hämta föregående vikt
     const { data: previous } = await supabase
       .from('weights')
-      .select('weight, date')
+      .select('weight')
       .eq('user_id', userId)
       .lt('date', date)
       .order('date', { ascending: false })
@@ -44,7 +41,6 @@ export default function WeightForm({ userId }: { userId: string }) {
     const prevWeight = previous?.weight ?? null
     const lost = prevWeight !== null ? prevWeight - newWeight : 0
 
-    // 3. Ge peppande feedback
     let feedback = 'Vikt registrerad!'
     if (lost > 0.4) {
       if (lost >= 3) feedback = `🥳 Superstjärna! Du har tappat ${lost.toFixed(1)} kg!`
@@ -57,7 +53,7 @@ export default function WeightForm({ userId }: { userId: string }) {
       feedback = '👍 Du håller koll – det är det viktigaste!'
     }
 
-    // 4. Uppdatera stjärnor om vikten gått ner tillräckligt
+    // Uppdatera stjärnor i profilen
     const { data: profile } = await supabase
       .from('profiles')
       .select('start_weight, stars')
@@ -72,18 +68,15 @@ export default function WeightForm({ userId }: { userId: string }) {
       const calculatedStars = Math.floor(totalLost / 1.5)
 
       if (calculatedStars > currentStars) {
-        const newStars = calculatedStars
-
         await supabase
           .from('profiles')
-          .update({ stars: newStars })
+          .update({ stars: calculatedStars })
           .eq('id', userId)
 
-        feedback += ` 🎉 Du har nu ${newStars} ⭐️!`
+        feedback += ` 🎉 Du har nu ${calculatedStars} ⭐️!`
       }
     }
 
-    // 5. Rensa formulär och visa feedback
     setMessage(feedback)
     setWeight('')
     setLoading(false)
@@ -118,28 +111,16 @@ export default function WeightForm({ userId }: { userId: string }) {
         />
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={isPublic}
-          onChange={() => setIsPublic(!isPublic)}
-          id="public"
-        />
-        <label htmlFor="public" className="text-sm">
-          Dela denna vikt med andra
-        </label>
-      </div>
-
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 text-base bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+        className="w-full py-3 text-base bg-amber-500 text-white rounded hover:bg-amber-600 transition"
       >
         {loading ? 'Sparar...' : 'Spara vikt'}
       </button>
 
       {message && (
-        <div className="text-center text-sm text-green-700 font-medium">
+        <div className="text-center text-sm text-amber-600 font-medium">
           {message}
         </div>
       )}

@@ -3,106 +3,83 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
+interface Profile {
+  first_name: string
+  last_name: string
+  start_weight: number
+  goal_weight: number
+  stars: number
+  public: boolean
+}
+
 export default function ProfileForm({
   userId,
   onProfileUpdate,
 }: {
   userId: string
-  onProfileUpdate?: (profile: { first_name: string; last_name: string }) => void
+  onProfileUpdate?: (profile: Partial<Profile>) => void
 }) {
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [startWeight, setStartWeight] = useState<number | null>(null)
-  const [goalWeight, setGoalWeight] = useState<number | null>(null)
-  const [isPublic, setIsPublic] = useState(false)
-  const [latestWeight, setLatestWeight] = useState<number | null>(null)
-  const [stars, setStars] = useState<number | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadProfile = async () => {
-      const { data: profile } = await supabase
+    const fetchProfile = async () => {
+      const { data, error } = await supabase
         .from('profiles')
-        .select('first_name, last_name, start_weight, goal_weight, public, stars')
+        .select('*')
         .eq('id', userId)
         .single()
 
-      if (profile) {
-        setFirstName(profile.first_name || '')
-        setLastName(profile.last_name || '')
-        setStartWeight(profile.start_weight ?? null)
-        setGoalWeight(profile.goal_weight ?? null)
-        setIsPublic(profile.public ?? false)
-        setStars(profile.stars ?? 0)
-      }
-
-      const { data: weight } = await supabase
-        .from('weights')
-        .select('weight')
-        .eq('user_id', userId)
-        .order('date', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (weight) {
-        setLatestWeight(weight.weight)
+      if (!error && data) {
+        setProfile(data)
       }
 
       setLoading(false)
     }
 
-    loadProfile()
+    fetchProfile()
   }, [userId])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setProfile((prev) => prev ? { ...prev, [name]: value } : null)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setMessage(null)
+    setLoading(true)
 
-    const { error } = await supabase.from('profiles').upsert({
-      id: userId,
-      first_name: firstName,
-      last_name: lastName,
-      start_weight: startWeight,
-      goal_weight: goalWeight,
-      public: isPublic,
-    })
-
-    if (error) {
-      setMessage('Kunde inte spara: ' + error.message)
-    } else {
-      setMessage('Profil uppdaterad!')
-      if (onProfileUpdate) {
-        onProfileUpdate({ first_name: firstName, last_name: lastName })
-      }
+    const updates = {
+      first_name: profile?.first_name,
+      last_name: profile?.last_name,
+      start_weight: Number(profile?.start_weight),
+      goal_weight: Number(profile?.goal_weight),
+      public: profile?.public ?? false,
     }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId)
+
+    if (!error) {
+      setMessage('Profil uppdaterad!')
+      onProfileUpdate?.(updates)
+    } else {
+      setMessage('Kunde inte uppdatera profilen.')
+    }
+
+    setLoading(false)
   }
 
-  const progress =
-    startWeight !== null &&
-    latestWeight !== null &&
-    goalWeight !== null &&
-    startWeight > goalWeight
-      ? Math.min(
-          100,
-          Math.max(
-            0,
-            Math.round(((startWeight - latestWeight) / (startWeight - goalWeight)) * 100)
-          )
-        )
-      : null
+  if (loading || !profile) return <p>Laddar profil...</p>
 
-  const renderStars = (count: number) => '⭐'.repeat(count)
-
-  const getMedal = (stars: number) => {
-    if (stars >= 20) return '🏆 Legend'
-    if (stars >= 15) return '🥇 Guld'
-    if (stars >= 10) return '🥈 Silver'
-    if (stars >= 5) return '🥉 Brons'
-    return ''
-  }
-
-  if (loading) return <p className="text-center">Laddar profil...</p>
+  const lost = profile.start_weight - profile.goal_weight
+  const progress = profile.start_weight && lost > 0
+    ? Math.max(0, Math.min(100, ((profile.start_weight - profile.goal_weight) / lost) * 100))
+    : 0
 
   return (
     <form
@@ -111,95 +88,75 @@ export default function ProfileForm({
     >
       <h2 className="text-xl font-bold text-center">Din profil</h2>
 
-      {/* Namn */}
-      <div className="space-y-1">
-        <label className="block text-sm font-medium">Förnamn</label>
+      <div className="flex gap-2">
         <input
-          className="w-full p-3 text-base border rounded"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
+          type="text"
+          name="first_name"
+          placeholder="Förnamn"
+          value={profile.first_name}
+          onChange={handleChange}
+          className="w-1/2 p-2 border rounded"
+        />
+        <input
+          type="text"
+          name="last_name"
+          placeholder="Efternamn"
+          value={profile.last_name}
+          onChange={handleChange}
+          className="w-1/2 p-2 border rounded"
         />
       </div>
 
-      <div className="space-y-1">
-        <label className="block text-sm font-medium">Efternamn</label>
-        <input
-          className="w-full p-3 text-base border rounded"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-        />
-      </div>
-
-      {/* Viktmål */}
-      <div className="space-y-1">
-        <label className="block text-sm font-medium">Startvikt (kg)</label>
+      <div className="flex gap-2">
         <input
           type="number"
-          className="w-full p-3 text-base border rounded"
-          value={startWeight ?? ''}
-          onChange={(e) => setStartWeight(parseFloat(e.target.value))}
+          name="start_weight"
+          placeholder="Startvikt"
+          value={profile.start_weight}
+          onChange={handleChange}
+          className="w-1/2 p-2 border rounded"
         />
-      </div>
-
-      <div className="space-y-1">
-        <label className="block text-sm font-medium">Målvikt (kg)</label>
         <input
           type="number"
-          className="w-full p-3 text-base border rounded"
-          value={goalWeight ?? ''}
-          onChange={(e) => setGoalWeight(parseFloat(e.target.value))}
+          name="goal_weight"
+          placeholder="Målvikt"
+          value={profile.goal_weight}
+          onChange={handleChange}
+          className="w-1/2 p-2 border rounded"
         />
       </div>
 
-      {/* Offentlig profil */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"
-          checked={isPublic}
-          onChange={(e) => setIsPublic(e.target.checked)}
           id="public"
+          checked={!!profile.public}
+          onChange={(e) =>
+            setProfile((prev) => prev ? { ...prev, public: e.target.checked } : prev)
+          }
         />
-        <label htmlFor="public" className="text-sm">
-          Visa min profil offentligt
-        </label>
+        <label htmlFor="public">Dela mina vikter offentligt</label>
       </div>
 
-      {/* Viktinfo */}
-      {latestWeight !== null && (
-        <p className="text-sm text-gray-600">
-          Senast loggad vikt: <strong>{latestWeight} kg</strong>
-        </p>
-      )}
+      <div className="text-sm text-gray-700 space-y-1">
+        <p>⭐️ Du har {profile.stars} stjärnor</p>
+<p>
+  🎯 Du har {Math.max(0, profile.start_weight - profile.goal_weight).toFixed(1)} kg kvar till målet
+</p>
+      </div>
 
-      {progress !== null && (
-        <div className="bg-gray-100 p-3 rounded text-sm text-center">
-          Du har nått{' '}
-          <span className="font-bold text-green-600">{progress}%</span> av ditt mål.
-        </div>
-      )}
-
-      {/* Stjärnor och medalj */}
-      {stars !== null && (
-        <div className="bg-yellow-50 p-3 rounded text-sm text-center space-y-2">
-          <div>
-            🌟 Du har samlat <strong>{stars}</strong> stjärna{stars === 1 ? '' : 'r'}!
-          </div>
-          <div className="text-xl break-words">{renderStars(stars)}</div>
-          {stars >= 5 && (
-            <div className="pt-2 text-2xl">{getMedal(stars)}</div>
-          )}
-        </div>
-      )}
-
-      {/* Spara */}
       <button
         type="submit"
-        className="w-full py-3 text-base bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+        className="w-full py-3 text-base bg-amber-500 text-white rounded hover:bg-amber-600 transition"
       >
-        Spara profil
+        {loading ? 'Sparar...' : 'Spara profil'}
       </button>
 
-      {message && <p className="text-green-600 text-sm text-center">{message}</p>}
+      {message && (
+        <div className="text-center text-sm text-amber-600 font-medium">
+          {message}
+        </div>
+      )}
     </form>
   )
 }
