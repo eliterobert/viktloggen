@@ -15,6 +15,7 @@ interface PublicUser {
   latest_walk_date?: string
   total_walk_km?: number
   total_lost_kg?: number
+  shared?: boolean
 }
 
 export default function PublicUsersList() {
@@ -22,21 +23,47 @@ export default function PublicUsersList() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchPublicUsers = async () => {
-      // 1. Hämta alla publika profiler
-      const { data: profiles, error } = await supabase
+    const fetchUsers = async () => {
+      const { data: authUser } = await supabase.auth.getUser()
+      const currentUserId = authUser?.user?.id
+
+      // 1. Hämta publika profiler
+      const { data: publicProfiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, stars, start_weight')
+        .select('id, first_name, last_name, stars, start_weight, public')
         .eq('public', true)
 
-      if (error || !profiles) return setLoading(false)
+      // 2. Hämta profiler som är delade med dig
+      let sharedProfiles: any[] = []
+      if (currentUserId) {
+        const { data: access } = await supabase
+          .from('profile_access')
+          .select('profile_id')
+          .eq('viewer_id', currentUserId)
+
+        const profileIds = access?.map((a) => a.profile_id) || []
+
+        if (profileIds.length > 0) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, stars, start_weight, public')
+            .in('id', profileIds)
+
+          sharedProfiles = (data || []).map((p) => ({ ...p, shared: !p.public }))
+        }
+      }
+
+      const combined = [...(publicProfiles || []), ...sharedProfiles || []]
+      const unique = combined.filter(
+        (profile, index, self) =>
+          index === self.findIndex((p) => p.id === profile.id)
+      )
 
       const enrichedUsers: PublicUser[] = []
 
-      for (const profile of profiles) {
+      for (const profile of unique) {
         const userId = profile.id
 
-        // Hämta senaste vikt
         const { data: weight } = await supabase
           .from('weights')
           .select('weight, date')
@@ -45,7 +72,6 @@ export default function PublicUsersList() {
           .limit(1)
           .single()
 
-        // Hämta senaste promenad
         const { data: latestWalk } = await supabase
           .from('walks')
           .select('distance_km, date')
@@ -54,7 +80,6 @@ export default function PublicUsersList() {
           .limit(1)
           .single()
 
-        // Hämta total sträcka
         const { data: totalWalk } = await supabase
           .from('walks')
           .select('distance_km')
@@ -78,6 +103,7 @@ export default function PublicUsersList() {
           latest_walk_date: latestWalk?.date,
           total_walk_km: totalKm,
           total_lost_kg: totalLost,
+          shared: profile.shared || false,
         })
       }
 
@@ -85,7 +111,7 @@ export default function PublicUsersList() {
       setLoading(false)
     }
 
-    fetchPublicUsers()
+    fetchUsers()
   }, [])
 
   if (loading) return <p className="text-center">Laddar användare...</p>
@@ -100,6 +126,9 @@ export default function PublicUsersList() {
             {user.first_name} {user.last_name}
           </p>
           <p className="text-sm text-gray-600">⭐ {user.stars} stjärnor</p>
+          {user.shared && (
+            <p className="text-sm text-orange-600 italic">🔐 Endast delat med dig</p>
+          )}
           {user.latest_weight && (
             <p className="text-sm text-gray-600">
               ⚖️ {user.latest_weight} kg ({new Date(user.latest_weight_date!).toLocaleDateString('sv-SE')})

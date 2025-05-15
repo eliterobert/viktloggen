@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import ShareProfile from './ShareProfile'
 
 interface Profile {
   first_name: string
@@ -97,7 +98,7 @@ export default function ProfileForm({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: user.id }),
-    });
+    })
 
     if (response.ok) {
       await supabase.auth.signOut()
@@ -176,6 +177,8 @@ export default function ProfileForm({
           🎯 Du har {Math.max(0, lost).toFixed(1)} kg kvar till målet
         </p>
       </div>
+
+      <ShareProfile userId={userId} />
 
       <button
         type="submit"
