@@ -83,6 +83,31 @@ export default function ProfileForm({
     setLoading(false)
   }
 
+  const handleDeleteAccount = async () => {
+    const confirmed = confirm("Är du säker på att du vill radera ditt konto och all data?")
+    if (!confirmed) return
+
+    const { data: { user }, error } = await supabase.auth.getUser()
+    if (error || !user) {
+      alert("Fel: kunde inte hämta användare.")
+      return
+    }
+
+    const response = await fetch("/api/delete-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: user.id }),
+    });
+
+    if (response.ok) {
+      await supabase.auth.signOut()
+      window.location.reload()
+    } else {
+      const errorText = await response.text()
+      alert("Kunde inte ta bort konto: " + errorText)
+    }
+  }
+
   if (loading) return <p className="text-center">Laddar profil...</p>
 
   const lost = profile?.start_weight && profile?.goal_weight
@@ -157,6 +182,13 @@ export default function ProfileForm({
         className="w-full py-3 text-base bg-amber-500 text-white rounded hover:bg-amber-600 transition"
       >
         {loading ? 'Sparar...' : 'Spara profil'}
+      </button>
+
+      <button
+        onClick={handleDeleteAccount}
+        className="mt-6 w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl shadow transition duration-200"
+      >
+        🗑 Radera konto och all data
       </button>
 
       {message && (
