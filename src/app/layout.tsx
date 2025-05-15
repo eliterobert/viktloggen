@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   title: 'Viktloggen',
   description: 'För oss som vill bli smala',
   viewport: 'width=device-width, initial-scale=1',
+    icons: {
+    icon: '/favicon.png',
+  },
 }
 
 export default function RootLayout({
