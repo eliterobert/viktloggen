@@ -12,12 +12,22 @@ import PublicUsersList from '../components/PublicUsersList'
 
 type PageView = 'log' | 'list' | 'profile' | 'users'
 
+interface Profile {
+  first_name: string
+  last_name: string
+  start_weight: number
+  goal_weight: number
+  stars: number
+  public: boolean
+}
+
 export default function Home() {
   const [session, setSession] = useState<any>(null)
   const [view, setView] = useState<PageView>('log')
-  const [profile, setProfile] = useState<{ first_name: string; last_name: string } | null>(null)
 
-  // Hämta och lyssna på session
+  // ✅ Typen är nu Partial<Profile> | null – för att matcha uppdateringar
+  const [profile, setProfile] = useState<Partial<Profile> | null>(null)
+
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -33,7 +43,6 @@ export default function Home() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Ladda profilnamn
   useEffect(() => {
     const fetchProfile = async () => {
       if (!session?.user) return
@@ -44,7 +53,10 @@ export default function Home() {
         .single()
 
       if (!error && data) {
-        setProfile({ first_name: data.first_name, last_name: data.last_name })
+        setProfile({
+          first_name: data.first_name,
+          last_name: data.last_name,
+        })
       }
     }
 
@@ -61,7 +73,6 @@ export default function Home() {
 
   return (
     <main className="p-4 max-w-xl mx-auto space-y-6">
-      {/* Navigation */}
       <div className="block sm:hidden">
         <MobileNav currentView={view} onChange={setView} />
       </div>
@@ -69,13 +80,11 @@ export default function Home() {
         <NavMenu currentView={view} onChange={setView} />
       </div>
 
-      {/* Välkomsttext */}
       <div className="pt-4 space-y-6">
         <h1 className="text-lg sm:text-xl font-semibold text-center truncate">
           Välkommen {profile?.first_name} 👋
         </h1>
 
-        {/* Vyer */}
         {view === 'log' && <WeightForm userId={session.user.id} />}
         {view === 'list' && <WeightList userId={session.user.id} />}
         {view === 'profile' && (
