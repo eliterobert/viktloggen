@@ -72,8 +72,8 @@ export default function WalkForm({
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full rounded-md border border-gray-300 px-4 py-2 shadow-sm
-                     focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+          className="w-full min-w-[200px] rounded-md border border-gray-300 px-4 py-2 text-base shadow-sm
+           focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
           required
         />
       </div>
