@@ -12,10 +12,12 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true)
   const [showReset, setShowReset] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setLoading(true)
 
     if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({
@@ -31,6 +33,7 @@ export default function Auth() {
 
       if (signUpError) {
         setError(signUpError.message)
+        setLoading(false)
         return
       }
 
@@ -43,6 +46,7 @@ export default function Auth() {
         })
       }
     }
+    setLoading(false)
   }
 
   if (showReset) {
@@ -50,12 +54,15 @@ export default function Auth() {
   }
 
   return (
-    <div className="max-w-sm mx-auto mt-10 p-4 border rounded shadow space-y-4">
-      <h2 className="text-xl font-bold">
-        {isLogin ? 'Logga in' : 'Registrera dig'}
-      </h2>
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 space-y-6"
+      >
+        <h2 className="text-3xl font-extrabold text-center text-gray-900">
+          {isLogin ? 'Logga in' : 'Registrera dig'}
+        </h2>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
         {!isLogin && (
           <>
             <input
@@ -63,7 +70,7 @@ export default function Auth() {
               placeholder="Förnamn"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="w-full p-2 border rounded"
+              className="w-full rounded-md border border-gray-300 px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
             />
             <input
@@ -71,17 +78,18 @@ export default function Auth() {
               placeholder="Efternamn"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="w-full p-2 border rounded"
+              className="w-full rounded-md border border-gray-300 px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
             />
           </>
         )}
+
         <input
           type="email"
           placeholder="E-post"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-2 border rounded"
+          className="w-full rounded-md border border-gray-300 px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           required
         />
         <input
@@ -89,30 +97,42 @@ export default function Auth() {
           placeholder="Lösenord"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 border rounded"
+          className="w-full rounded-md border border-gray-300 px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           required
         />
 
-        <button className="w-full bg-blue-500 text-white p-2 rounded" type="submit">
-          {isLogin ? 'Logga in' : 'Registrera'}
+        {error && (
+          <p className="text-red-600 text-center font-medium">{error}</p>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full flex justify-center py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition disabled:opacity-50"
+        >
+          {loading ? (isLogin ? 'Loggar in...' : 'Registrerar...') : isLogin ? 'Logga in' : 'Registrera'}
         </button>
 
-        <div className="flex justify-between text-sm">
-          <span
-            className="text-blue-600 underline cursor-pointer"
+        <div className="flex justify-between text-sm text-indigo-700">
+          <button
+            type="button"
             onClick={() => setShowReset(true)}
+            className="underline hover:text-indigo-900"
           >
             Glömt lösenord?
-          </span>
-          <span
-            className="text-blue-600 underline cursor-pointer"
-            onClick={() => setIsLogin(!isLogin)}
-          >
-            {isLogin ? 'Skapa konto' : 'Har du ett konto? Logga in'}
-          </span>
-        </div>
+          </button>
 
-        {error && <p className="text-red-600">{error}</p>}
+          <button
+            type="button"
+            onClick={() => {
+              setIsLogin(!isLogin)
+              setError(null)
+            }}
+            className="underline hover:text-indigo-900"
+          >
+            {isLogin ? 'Skapa konto' : 'Har du redan ett konto? Logga in'}
+          </button>
+        </div>
       </form>
     </div>
   )
