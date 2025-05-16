@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import ForgotPassword from './ForgotPassword'
+import Image from 'next/image'
 
 export default function Auth() {
   const [email, setEmail] = useState('')
@@ -54,11 +55,25 @@ export default function Auth() {
   }
 
   return (
+
     <div className="min-h-screen flex items-center justify-center px-4">
+
+      <div className="flex justify-center">
+
+      </div>
+
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 space-y-6"
       >
+        <Image
+          src="/viktloggen.png"
+          alt="Viktloggen logga"
+          width={300}
+          height={50}
+          priority
+          className="mb-8 mx-auto"
+        />
         <h2 className="text-3xl font-extrabold text-center text-gray-900">
           {isLogin ? 'Logga in' : 'Registrera dig'}
         </h2>

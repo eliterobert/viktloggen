@@ -72,7 +72,8 @@ export default function WalkForm({
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full p-3 text-base border rounded"
+          className="w-full rounded-md border border-gray-300 px-4 py-2 shadow-sm
+                     focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
           required
         />
       </div>
@@ -85,7 +86,8 @@ export default function WalkForm({
           min="0"
           value={distance}
           onChange={(e) => setDistance(e.target.value)}
-          className="w-full p-3 text-base border rounded"
+          className="w-full rounded-md border border-gray-300 px-4 py-2 shadow-sm
+                     focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
           required
         />
       </div>
@@ -98,7 +100,8 @@ export default function WalkForm({
           min="0"
           value={duration}
           onChange={(e) => setDuration(e.target.value)}
-          className="w-full p-3 text-base border rounded"
+          className="w-full rounded-md border border-gray-300 px-4 py-2 shadow-sm
+                     focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
         />
       </div>
 
@@ -107,7 +110,8 @@ export default function WalkForm({
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          className="w-full p-3 text-base border rounded"
+          className="w-full rounded-md border border-gray-300 px-4 py-2 shadow-sm
+                     focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
           rows={2}
         />
       </div>
@@ -115,7 +119,7 @@ export default function WalkForm({
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 text-base bg-emerald-500 text-white rounded hover:bg-emerald-600 transition"
+        className="w-full flex justify-center py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition disabled:opacity-50"
       >
         {loading ? 'Sparar...' : 'Spara promenad'}
       </button>

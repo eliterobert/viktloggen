@@ -11,6 +11,8 @@ import ProfileForm from '../components/ProfileForm'
 import PublicUsersList from '../components/PublicUsersList'
 import WalkForm, { Walk } from '../components/WalkForm'
 import WalkList from '../components/WalkList'
+import Header from '@/components/Header'
+import Head from 'next/head'
 
 type PageView = 'log' | 'profile' | 'users' | 'walks'
 
@@ -103,6 +105,7 @@ export default function Home() {
 
   return (
     <main className="p-4 max-w-xl mx-auto space-y-6">
+         <Header />
       <div className="block sm:hidden">
         <MobileNav currentView={view} onChange={setView} />
       </div>
@@ -111,6 +114,7 @@ export default function Home() {
       </div>
 
       <div className="pt-4 space-y-6">
+     
         <h1 className="text-lg sm:text-xl font-semibold text-center truncate">
           Välkommen {profile?.first_name} 👋
         </h1>

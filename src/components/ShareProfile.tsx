@@ -115,7 +115,7 @@ console.log('Rader som försöker tas bort:', {
           type="button"
           onClick={handleShare}
           disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-r-md text-sm transition"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 rounded-r-md text-sm transition"
         >
           {loading ? 'Delar...' : 'Dela'}
         </button>

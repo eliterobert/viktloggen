@@ -191,7 +191,7 @@ export default function ProfileForm({
         />
         <label htmlFor="public">Dela mina vikter offentligt</label>
       </div>
-
+      <ShareProfile userId={userId} />
       {/* Info */}
       <div className="bg-gray-50 p-3 rounded-md text-sm text-gray-700 space-y-1">
         <p>⭐ Du har <strong>{profile?.stars ?? 0}</strong> stjärnor</p>
@@ -199,13 +199,13 @@ export default function ProfileForm({
       </div>
 
 
-      <ShareProfile userId={userId} />
+
 
       {/* Knappar */}
       <div className="space-y-3">
         <button
           type="submit"
-          className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-md transition"
+          className="w-full flex justify-center py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition disabled:opacity-50"
         >
           💾 Spara profil
         </button>

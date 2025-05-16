@@ -100,7 +100,8 @@ if (startWeight && newWeight < startWeight) {
           step="0.1"
           value={weight}
           onChange={(e) => setWeight(e.target.value)}
-          className="w-full p-3 text-base border rounded"
+          className="w-full rounded-md border border-gray-300 px-4 py-2 shadow-sm
+                     focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
           required
         />
       </div>
@@ -111,20 +112,21 @@ if (startWeight && newWeight < startWeight) {
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full p-3 text-base border rounded"
+          className="w-full rounded-md border border-gray-300 px-4 py-2 shadow-sm
+                     focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
         />
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 text-base bg-amber-500 text-white rounded hover:bg-amber-600 transition"
+        className="w-full flex justify-center py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition disabled:opacity-50"
       >
         {loading ? 'Sparar...' : 'Spara vikt'}
       </button>
 
       {message && (
-        <div className="text-center text-sm text-amber-600 font-medium">
+        <div className="">
           {message}
         </div>
       )}
