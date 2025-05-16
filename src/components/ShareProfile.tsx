@@ -3,21 +3,40 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
+type SharedUser = {
+  id: string
+  email: string
+}
+
 export default function ShareProfile({ userId }: { userId: string }) {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState<string | null>(null)
-  const [sharedWith, setSharedWith] = useState<string[]>([])
+  const [sharedWith, setSharedWith] = useState<SharedUser[]>([])
   const [loading, setLoading] = useState(false)
 
   const fetchSharedViewers = async () => {
-    const { data, error } = await supabase
+    const { data: accessData, error: accessError } = await supabase
       .from('profile_access')
       .select('viewer_id')
       .eq('profile_id', userId)
 
-    if (!error && data) {
-      setSharedWith(data.map((row) => row.viewer_id))
+    if (accessError || !accessData) return
+
+    const viewerIds = accessData.map((row) => row.viewer_id)
+
+    if (viewerIds.length === 0) {
+      setSharedWith([])
+      return
     }
+
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .in('id', viewerIds)
+
+    if (profileError || !profiles) return
+
+    setSharedWith(profiles)
   }
 
   useEffect(() => {
@@ -28,73 +47,63 @@ export default function ShareProfile({ userId }: { userId: string }) {
     e.preventDefault?.()
     setMessage(null)
     setLoading(true)
-console.log('Skickar delning:', { profile_id: userId, email })
+
     const response = await fetch('/api/share-profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ profile_id: userId, email }),
     })
-console.log(response.text)
+
     if (response.ok) {
-      setMessage('Delning skapad!')
+      setMessage('✅ Delning skapad!')
       setEmail('')
       fetchSharedViewers()
     } else {
       const errorText = await response.text()
-      setMessage(`Fel: ${errorText}`)
+      setMessage(`❌ Fel: ${errorText}`)
     }
+
     setLoading(false)
-  }
-
-  const handleUnshare = async (viewerId: string) => {
-    const { error } = await supabase
-      .from('profile_access')
-      .delete()
-      .eq('profile_id', userId)
-      .eq('viewer_id', viewerId)
-
-    if (!error) {
-      setSharedWith((prev) => prev.filter((id) => id !== viewerId))
-    }
   }
 
   return (
     <div className="space-y-4">
-      <h3 className="text-md font-semibold">Dela med specifik användare</h3>
+      <label className="font-semibold text-sm flex items-center gap-2">
+        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path d="M13.828 10.172a4 4 0 015.657 0l1.415 1.414a4 4 0 010 5.657l-3.536 3.536a4 4 0 01-5.657 0l-1.414-1.414M10.172 13.828a4 4 0 01-5.657 0l-1.415-1.414a4 4 0 010-5.657l3.536-3.536a4 4 0 015.657 0l1.414 1.414" />
+        </svg>
+        Dela din profil
+      </label>
 
-      <div className="flex gap-2">
+      <div className="flex">
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleShare(e)}
           placeholder="E-postadress"
-          className="flex-1 p-2 border rounded"
+          className="flex-1 rounded-l-md border border-gray-300 p-2 text-sm"
         />
         <button
           onClick={handleShare}
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-r-md text-sm transition"
         >
           {loading ? 'Delar...' : 'Dela'}
         </button>
       </div>
 
-      {message && <p className="text-sm text-blue-600">{message}</p>}
+      {message && (
+        <p className="text-sm text-gray-700">{message}</p>
+      )}
 
       {sharedWith.length > 0 && (
         <div className="text-sm space-y-1">
-          <p className="font-medium">Delas med:</p>
-          <ul className="list-disc pl-4">
-            {sharedWith.map((id) => (
-              <li key={id} className="flex items-center justify-between">
-                <span className="truncate text-gray-700">{id}</span>
-                <button
-                  onClick={() => handleUnshare(id)}
-                  className="text-red-600 text-xs hover:underline"
-                >
-                  Ta bort
-                </button>
+          <p className="font-medium text-gray-800">🔒 Delas med:</p>
+          <ul className="list-disc pl-4 space-y-1">
+            {sharedWith.map((user) => (
+              <li key={`${user.id}-${user.email}`} className="text-gray-600">
+                {user.email}
               </li>
             ))}
           </ul>

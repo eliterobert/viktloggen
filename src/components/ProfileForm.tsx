@@ -75,10 +75,10 @@ export default function ProfileForm({
     const { error } = await supabase.from('profiles').upsert(updates)
 
     if (!error) {
-      setMessage('Profil sparad!')
+      setMessage('✅ Profil sparad!')
       onProfileUpdate?.(updates)
     } else {
-      setMessage('Kunde inte spara profilen.')
+      setMessage('❌ Kunde inte spara profilen.')
     }
 
     setLoading(false)
@@ -118,48 +118,69 @@ export default function ProfileForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-md mx-auto p-4 space-y-5 bg-white shadow rounded-md"
+      className="w-full max-w-md mx-auto p-6 space-y-6 bg-white shadow-lg rounded-2xl"
     >
-      <h2 className="text-xl font-bold text-center">Din profil</h2>
+      <h2 className="text-2xl font-bold text-center text-purple-800 flex items-center justify-center gap-2">
+        <span>👤</span> Din profil
+      </h2>
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          name="first_name"
-          placeholder="Förnamn"
-          value={profile?.first_name || ''}
-          onChange={handleChange}
-          className="w-1/2 p-2 border rounded"
-        />
-        <input
-          type="text"
-          name="last_name"
-          placeholder="Efternamn"
-          value={profile?.last_name || ''}
-          onChange={handleChange}
-          className="w-1/2 p-2 border rounded"
-        />
+      {/* Namn */}
+      <div className="flex gap-4">
+        <div className="w-1/2">
+          <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">Förnamn</label>
+          <input
+            id="first_name"
+            type="text"
+            name="first_name"
+            placeholder="Förnamn"
+            value={profile?.first_name || ''}
+            onChange={handleChange}
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+        <div className="w-1/2">
+          <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">Efternamn</label>
+          <input
+            id="last_name"
+            type="text"
+            name="last_name"
+            placeholder="Efternamn"
+            value={profile?.last_name || ''}
+            onChange={handleChange}
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
       </div>
 
-      <div className="flex gap-2">
-        <input
-          type="number"
-          name="start_weight"
-          placeholder="Startvikt"
-          value={profile?.start_weight || ''}
-          onChange={handleChange}
-          className="w-1/2 p-2 border rounded"
-        />
-        <input
-          type="number"
-          name="goal_weight"
-          placeholder="Målvikt"
-          value={profile?.goal_weight || ''}
-          onChange={handleChange}
-          className="w-1/2 p-2 border rounded"
-        />
+      {/* Vikt */}
+      <div className="flex gap-4">
+        <div className="w-1/2">
+          <label htmlFor="start_weight" className="block text-sm font-medium text-gray-700 mb-1">Startvikt (kg)</label>
+          <input
+            id="start_weight"
+            type="number"
+            name="start_weight"
+            placeholder="Startvikt"
+            value={profile?.start_weight || ''}
+            onChange={handleChange}
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+        <div className="w-1/2">
+          <label htmlFor="goal_weight" className="block text-sm font-medium text-gray-700 mb-1">Målvikt (kg)</label>
+          <input
+            id="goal_weight"
+            type="number"
+            name="goal_weight"
+            placeholder="Målvikt"
+            value={profile?.goal_weight || ''}
+            onChange={handleChange}
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
       </div>
 
+      {/* Offentlig */}
       <div className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"
@@ -171,33 +192,35 @@ export default function ProfileForm({
         <label htmlFor="public">Dela mina vikter offentligt</label>
       </div>
 
-      <div className="text-sm text-gray-700 space-y-1">
-        <p>⭐️ Du har {profile?.stars ?? 0} stjärnor</p>
-        <p>
-          🎯 Du har {Math.max(0, lost).toFixed(1)} kg kvar till målet
-        </p>
+      {/* Info */}
+      <div className="bg-gray-50 p-3 rounded-md text-sm text-gray-700 space-y-1">
+        <p>⭐ Du har <strong>{profile?.stars ?? 0}</strong> stjärnor</p>
+        <p>🎯 Du har <strong>{Math.max(0, lost).toFixed(1)} kg</strong> kvar till målet</p>
       </div>
+
 
       <ShareProfile userId={userId} />
 
-      <button
-        type="submit"
-        className="w-full py-3 text-base bg-amber-500 text-white rounded hover:bg-amber-600 transition"
-      >
-        {loading ? 'Sparar...' : 'Spara profil'}
-      </button>
+      {/* Knappar */}
+      <div className="space-y-3">
+        <button
+          type="submit"
+          className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-md transition"
+        >
+          💾 Spara profil
+        </button>
 
-      <button
-        onClick={handleDeleteAccount}
-        className="mt-6 w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl shadow transition duration-200"
-      >
-        🗑 Radera konto och all data
-      </button>
+        <button
+          type="button"
+          onClick={handleDeleteAccount}
+          className="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md"
+        >
+          🗑 Radera konto och all data
+        </button>
+      </div>
 
       {message && (
-        <div className="text-center text-sm text-amber-600 font-medium">
-          {message}
-        </div>
+        <p className="text-center text-sm text-amber-600 font-medium">{message}</p>
       )}
     </form>
   )
